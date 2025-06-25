@@ -12,7 +12,7 @@ const fs = require("fs");
 const path = require("path");
 require("dotenv").config();
 const diningLocationMenus = require("../utils/diningLocationsMenus");
-const sampleAIResponse = require("../utils/sampleAIResponse");
+const sampleAIResponse = require("../utils/aiPrompt");
 
 // Replace this with your actual Gemini API client or HTTP call
 async function callGeminiAPI(prompt) {}

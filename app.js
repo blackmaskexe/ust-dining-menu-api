@@ -22,3 +22,6 @@ app.get("/", (req, res, next) => {
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
+
+// import dummy data into the weeklyMenu folder
+// add logic to the controllers to serve a response based on that data

@@ -1,21 +1,25 @@
-module.exports = () => {
-  return {
-    menu: "menu",
-  };
-
-  // this should fetch the menus, and overwrite the respective menu files
-};
-
+const { GoogleGenAI } = require("@google/genai");
 const axios = require("axios");
 const cheerio = require("cheerio");
 const fs = require("fs");
 const path = require("path");
 require("dotenv").config();
 const diningLocationMenus = require("../utils/diningLocationsMenus");
-const sampleAIResponse = require("../utils/aiPrompt");
+const aiInstructions = require("../utils/aiPrompt");
 
-// Replace this with your actual Gemini API client or HTTP call
-async function callGeminiAPI(prompt) {}
+const ai = new GoogleGenAI({
+  apiKey: "AIzaSyBjE7Ss9Ov3VmbE_1LA_M_OX6VGKxcLLSg",
+});
+
+async function callGeminiAPI(prompt) {
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: prompt,
+  });
+  console.log(response.text);
+  console.log("I always want you and I COMING DOWNNNNN");
+  return response.text;
+}
 
 module.exports = async function scrapeMenu(diningLocationIndex) {
   const selectedDiningLocationIndex = diningLocationIndex;
@@ -24,7 +28,9 @@ module.exports = async function scrapeMenu(diningLocationIndex) {
 
   // Fetch the menu page
   const response = await axios.get(selectedDiningLocation.dining_menu_link, {
-    httpsAgent: new (require("https").Agent)(),
+    httpsAgent: new (require("https").Agent)({
+      rejectUnauthorized: false,
+    }),
   });
   const rawSiteHtml = response.data;
 
@@ -34,8 +40,9 @@ module.exports = async function scrapeMenu(diningLocationIndex) {
 
   // Prepare AI instructions and sample response
 
-  // Call Gemini API (replace with your actual call)
+  console.log("TO YOU, AND TO ME");
   const aiResponse = await callGeminiAPI(aiInstructions + relevantContent);
+  console.log("BUT YOU ESPECIALLY");
 
   // Clean and parse the response
   let cleanedResponse = aiResponse
@@ -50,10 +57,12 @@ module.exports = async function scrapeMenu(diningLocationIndex) {
   }
 
   // Save to file (overwrite each week)
-  const dataDir = path.join(__dirname, "../data");
+  console.log("I always want you and I coming downnnnnn");
+
+  const dataDir = path.join(__dirname, "../weeklyMenu");
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
   fs.writeFileSync(
-    path.join(dataDir, "menuData.json"),
+    path.join(dataDir, "theView.json"),
     JSON.stringify(menuData, null, 2)
   );
 

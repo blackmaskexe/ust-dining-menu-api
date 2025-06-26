@@ -82,6 +82,18 @@ function getMenuNow() {
   } else {
     return {};
   }
+
+  // returns an object like this:
+  // {
+  //     table_title: "Lunch",
+  //     menu: {
+  //       "Main Course": ["Croissant"],
+  //       "Greens Station": ["Oatmeal & Toppings"],
+  //       "Your Call Station": ["Eggs & Omelet Bar"],
+  //       "Bakery Station": ["Chocolate Chip Muffins", "Mini Cinnamon Rolls"],
+  //       "Other Open Stations": ["Waffles & Toppings"],
+  //     },
+  //   },
 }
 
 exports.getViewMenuNow = (req, res) => {
@@ -90,4 +102,21 @@ exports.getViewMenuNow = (req, res) => {
 
 exports.getViewMenuToday = (req, res) => {
   res.json(getTodayMenu());
+};
+
+const { GoogleGenAI } = require("@google/genai");
+const ai = new GoogleGenAI({
+  apiKey: "AIzaSyBjE7Ss9Ov3VmbE_1LA_M_OX6VGKxcLLSg",
+});
+
+exports.test = (req, res) => {
+  async function callGeminiAPI(prompt) {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
+    console.log(response.text);
+    console.log("I always want you and I COMING DOWNNNNN");
+  }
+  callGeminiAPI("I ALWAYS WANT YOU AND I COMING DOOWNNNNNN");
 };

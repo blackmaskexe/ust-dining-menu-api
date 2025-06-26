@@ -10,6 +10,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 const indexRouter = require("./routes/index");
+const { callGeminiAPI } = require("./scraping/scrapeMenu");
 app.use(indexRouter);
 
 app.get("/", (req, res, next) => {

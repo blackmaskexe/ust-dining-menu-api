@@ -13,4 +13,4 @@ const diningLocationMenus = [
   },
 ];
 
-export default diningLocationMenus;
+module.exports = diningLocationMenus;

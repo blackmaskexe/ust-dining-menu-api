@@ -117,8 +117,8 @@ Your response should look like the following based on the content: ${JSON.string
   sampleResponse
 )}.
 (Please note that this is just a skeleton response. Your response should contain all the information in the website, and not miss any entry for any item or day.
-Your response should only contain the JSON object, and nothing else.
-If something goes wrong, just return an empty JSON array, but you do have to always return valid json response.)
+Your response should only contain the JSON object, and nothing else. There might be just one item per menu element on the sample response, but you have to output ALL of the items present on the website in your response, don't leave any behind please, and also include all the days of the week when the menu is served)
+If something goes wrong, just return an empty JSON array, but you do have to always return valid json response.
 `;
 
 module.exports = aiInstructions;

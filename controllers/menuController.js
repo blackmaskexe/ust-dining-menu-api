@@ -4,7 +4,7 @@ function getTodayMenu() {
   // Extract today's menu for each table_title
 
   const today = new Date().toLocaleDateString("en-US", { weekday: "long" }); // gives sum like "Tuesday" or "Saturday"
-  const todayMenusMeals = menuData
+  const todayMenusMeals = viewMenuData
     .map((section) => {
       const menuForToday = section.menu_on_days[today];
       if (menuForToday && Object.keys(menuForToday).length > 0) {
@@ -70,7 +70,7 @@ function getMenuNow() {
   const mealTimeNow = getMealTimeNow();
 
   const menuNow = todayMenuMeals.filter((meanuMeal) => {
-    if ((meanuMeal.table_title = mealTimeNow)) {
+    if (meanuMeal.table_title == mealTimeNow) {
       return true;
     } else {
       return false;

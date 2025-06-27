@@ -8,7 +8,7 @@ const diningLocationMenus = require("../utils/diningLocationsMenus");
 const aiInstructions = require("../utils/aiPrompt");
 
 const ai = new GoogleGenAI({
-  apiKey: "AIzaSyBjE7Ss9Ov3VmbE_1LA_M_OX6VGKxcLLSg",
+  apiKey: process.env.GEMINI_API_KEY,
 });
 
 async function callGeminiAPI(prompt) {
@@ -17,7 +17,6 @@ async function callGeminiAPI(prompt) {
     contents: prompt,
   });
   console.log(response.text);
-  console.log("I always want you and I COMING DOWNNNNN");
   return response.text;
 }
 
@@ -40,9 +39,9 @@ module.exports = async function scrapeMenu(diningLocationIndex) {
 
   // Prepare AI instructions and sample response
 
-  console.log("TO YOU, AND TO ME");
+  console.log("The party and");
   const aiResponse = await callGeminiAPI(aiInstructions + relevantContent);
-  console.log("BUT YOU ESPECIALLY");
+  console.log("The after party");
 
   // Clean and parse the response
   let cleanedResponse = aiResponse

@@ -1,5 +1,8 @@
 const express = require("express");
 require("./scraping/scrapeScheduler"); // import and run the webscraping scheduler
+const cors = require("cors");
+
+app.use(cors()); // This enables CORS for all routes
 
 const app = express();
 const port = process.env.PORT || 3000;

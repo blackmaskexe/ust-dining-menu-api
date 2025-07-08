@@ -20,10 +20,9 @@ async function callGeminiAPI(prompt) {
   return response.text;
 }
 
-module.exports = async function scrapeMenu(diningLocationIndex) {
-  const selectedDiningLocationIndex = diningLocationIndex;
+exports.scrapeViewMenu = async function scrapeViewMenu() {
   const selectedDiningLocation =
-    diningLocationMenus[selectedDiningLocationIndex];
+    diningLocationMenus[0]; // selecting The View as a dining location 
 
   // Fetch the menu page
   const response = await axios.get(selectedDiningLocation.dining_menu_link, {
@@ -62,6 +61,52 @@ module.exports = async function scrapeMenu(diningLocationIndex) {
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
   fs.writeFileSync(
     path.join(dataDir, "theView.json"),
+    JSON.stringify(menuData, null, 2)
+  );
+
+  return menuData;
+};
+
+exports.scrapeNorthsiderMenu = async function scrapeNorthsiderMenu() {
+  const selectedDiningLocation =
+    diningLocationMenus[1]; // selecting Northsider as a dining location 
+
+  // Fetch the menu page
+  const response = await axios.get(selectedDiningLocation.dining_menu_link, {
+    httpsAgent: new (require("https").Agent)({
+      rejectUnauthorized: false,
+    }),
+  });
+  const rawSiteHtml = response.data;
+
+  // Parse HTML and extract relevant content
+  const parsedHTML = cheerio.load(rawSiteHtml);
+  const relevantContent = parsedHTML("#content").html();
+
+  // Prepare AI instructions and sample response
+  console.log("The party and");
+  const aiResponse = await callGeminiAPI(aiInstructions + relevantContent);
+  console.log("The after party");
+
+  // Clean and parse the response
+  let cleanedResponse = aiResponse
+    .trim()
+    .replace(/^```json|^```|```$/g, "")
+    .trim();
+  let menuData;
+  try {
+    menuData = JSON.parse(cleanedResponse);
+  } catch (e) {
+    menuData = [];
+  }
+
+  // Save to file (overwrite each week)
+  console.log("I always want you and I coming downnnnnn");
+
+  const dataDir = path.join(__dirname, "../weeklyMenu");
+  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
+  fs.writeFileSync(
+    path.join(dataDir, "northsider.json"),
     JSON.stringify(menuData, null, 2)
   );
 

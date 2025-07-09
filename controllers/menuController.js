@@ -1,10 +1,11 @@
 const viewMenuData = require("../weeklyMenu/theView.json");
+const northsiderMenuData = require("../weeklyMenu/northsider.json");
 
-function getTodayMenu() {
+function getMenuToday(diningLocationMenuData) {
   // Extract today's menu for each table_title
 
   const today = new Date().toLocaleDateString("en-US", { weekday: "long" }); // gives sum like "Tuesday" or "Saturday"
-  const todayMenusMeals = viewMenuData
+  const todayMenusMeals = diningLocationMenuData
     .map((section) => {
       const menuForToday = section.menu_on_days[today];
       if (menuForToday && Object.keys(menuForToday).length > 0) {
@@ -45,28 +46,45 @@ function getTodayMenu() {
 }
 
 function getMealTimeNow() {
+  // Get current time in Chicago timezone
   const now = new Date();
-  const hour = now.getHours();
-  const day = now.toLocaleDateString("en-US", { weekday: "long" });
+  const chicagoDate = new Date(
+    now.toLocaleString("en-US", { timeZone: "America/Chicago" })
+  );
 
-  if (day === "Saturday" && hour >= 8 && hour < 14) {
+  const hour = chicagoDate.getHours();
+  const day = chicagoDate.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
+
+  // Define operating hours clearly
+  const BREAKFAST_START = 7;
+  const BREAKFAST_END = 11;
+  const LUNCH_START = 11;
+  const LUNCH_END = 16;
+  const DINNER_START = 16;
+  const DINNER_END = 19;
+
+  // Saturday special case
+  if (day === 6) {
     return "Saturday Brunch";
   }
-  if (hour < 11) {
+
+  // Regular weekday schedule
+  if (hour >= BREAKFAST_START && hour < BREAKFAST_END) {
     return "Breakfast";
   }
-  if (hour < 15) {
+  if (hour >= LUNCH_START && hour < LUNCH_END) {
     return "Lunch";
   }
-  if (hour < 18) {
+  if (hour >= DINNER_START && hour < DINNER_END) {
     return "Dinner";
   }
-  // returning null in other cases (place closed, errors, etc)
+
+  // Outside operating hours
   return null;
 }
 
-function getMenuNow() {
-  const todayMenuMeals = getTodayMenu();
+function getMenuNow(diningLocationMenuData) {
+  const todayMenuMeals = getMenuToday(diningLocationMenuData);
   const mealTimeNow = getMealTimeNow();
 
   const menuNow = todayMenuMeals.filter((meanuMeal) => {
@@ -97,26 +115,17 @@ function getMenuNow() {
 }
 
 exports.getViewMenuNow = (req, res) => {
-  res.json(getMenuNow());
+  res.json(getMenuNow(viewMenuData));
 };
 
 exports.getViewMenuToday = (req, res) => {
-  res.json(getTodayMenu());
+  res.json(getMenuToday(viewMenuData));
 };
 
-const { GoogleGenAI } = require("@google/genai");
-const ai = new GoogleGenAI({
-  apiKey: "AIzaSyBjE7Ss9Ov3VmbE_1LA_M_OX6VGKxcLLSg",
-});
+exports.getNorthsiderMenuNow = (req, res) => {
+  res.json(getMenuNow(northsiderMenuData));
+};
 
-exports.test = (req, res) => {
-  async function callGeminiAPI(prompt) {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-    });
-    console.log(response.text);
-    console.log("I always want you and I COMING DOWNNNNN");
-  }
-  callGeminiAPI("I ALWAYS WANT YOU AND I COMING DOOWNNNNNN");
+exports.getNorthsiderMenuToday = (req, res) => {
+  res.json(getMenuToday(northsiderMenuData));
 };

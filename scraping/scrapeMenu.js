@@ -54,7 +54,6 @@ exports.scrapeViewMenu = async function scrapeViewMenu() {
   }
 
   // Save to file (overwrite each week)
-  console.log("I always want you and I coming downnnnnn");
 
   const dataDir = path.join(__dirname, "../weeklyMenu");
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
@@ -99,7 +98,6 @@ exports.scrapeNorthsiderMenu = async function scrapeNorthsiderMenu() {
   }
 
   // Save to file (overwrite each week)
-  console.log("I always want you and I coming downnnnnn");
 
   const dataDir = path.join(__dirname, "../weeklyMenu");
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);

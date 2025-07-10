@@ -50,7 +50,7 @@ function getMealTimeNow() {
   const now = new Date();
   const chicagoDate = new Date(
     now.toLocaleString("en-US", { timeZone: "America/Chicago" })
-  );
+  ); // Chicago because Minnesota. It's simple, really.
 
   const hour = chicagoDate.getHours();
   const day = chicagoDate.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday

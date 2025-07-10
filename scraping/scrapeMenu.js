@@ -13,7 +13,7 @@ const ai = new GoogleGenAI({
 
 async function callGeminiAPI(prompt) {
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-2.5-pro",
     contents: prompt,
   });
   console.log(response.text);
@@ -21,8 +21,7 @@ async function callGeminiAPI(prompt) {
 }
 
 exports.scrapeViewMenu = async function scrapeViewMenu() {
-  const selectedDiningLocation =
-    diningLocationMenus[0]; // selecting The View as a dining location 
+  const selectedDiningLocation = diningLocationMenus[0]; // selecting The View as a dining location
 
   // Fetch the menu page
   const response = await axios.get(selectedDiningLocation.dining_menu_link, {
@@ -68,8 +67,7 @@ exports.scrapeViewMenu = async function scrapeViewMenu() {
 };
 
 exports.scrapeNorthsiderMenu = async function scrapeNorthsiderMenu() {
-  const selectedDiningLocation =
-    diningLocationMenus[1]; // selecting Northsider as a dining location 
+  const selectedDiningLocation = diningLocationMenus[1]; // selecting Northsider as a dining location
 
   // Fetch the menu page
   const response = await axios.get(selectedDiningLocation.dining_menu_link, {

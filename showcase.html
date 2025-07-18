@@ -1,0 +1,313 @@
+<style>
+  * {
+    box-sizing: border-box;
+  }
+
+  html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .themed-button-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+    align-items: flex-start;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  .themed-box {
+    font-family: 'Inter', sans-serif;
+    background-color: #ffffff;
+    color: var(--udl-brand-default-contrast);
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 8px -2px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    padding: 1rem;
+    max-width: 100%;
+    width: 100%;
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 0.75rem;
+    overflow-x: hidden;
+  }
+
+  .themed-box__title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--udl-brand-primary);
+    margin-bottom: 0.75rem;
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  .station-heading {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--udl-brand-secondary);
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.15rem;
+    border-bottom: 1px solid var(--udl-brand-secondary-variant);
+  }
+
+  .menu-item-box-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    overflow-x: hidden;
+  }
+
+  .menu-item-box {
+  background-color: var(--udl-brand-primary-variant);
+  color: var(--udl-brand-primary-contrast);
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  display: inline-flex; /* use inline-flex to allow wrapping within flex grid */
+  align-items: center;
+  white-space: normal; /* allow wrapping */
+  word-break: break-word; /* optional: handles edge cases */
+  flex-shrink: 0;
+  border: 1px solid var(--udl-brand-primary);
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  max-width: 100%; /* prevent breaking layout */
+}
+
+  .menu-item-box:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  }
+
+  .themed-box__description {
+    text-align: center;
+    color: var(--udl-brand-default-contrast);
+    margin-top: 0.75rem;
+    font-size: 1rem;
+  }
+
+  .tab-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+    gap: 0.5rem;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .tab-button {
+    padding: 0.6rem 1.2rem;
+    border: 1px solid var(--udl-brand-primary-variant);
+    border-radius: 0.4rem;
+    background-color: var(--udl-brand-default);
+    color: var(--udl-brand-primary);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex-grow: 1;
+    text-align: center;
+    font-size: 0.95rem;
+    max-width: 100%;
+  }
+
+  .tab-button:hover {
+    background-color: var(--udl-brand-primary-variant);
+    color: var(--udl-brand-primary-contrast);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .tab-button.active {
+    background-color: var(--udl-brand-primary);
+    color: var(--udl-brand-primary-contrast);
+    border-color: var(--udl-brand-primary);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  @media (max-width: 640px) {
+    .themed-box {
+      padding: 0.75rem;
+      border-radius: 0.4rem;
+    }
+
+    .station-heading {
+      font-size: 1.05rem;
+    }
+
+    .menu-item-box-container {
+      gap: 0.3rem;
+    }
+
+    .tab-button {
+      font-size: 0.9rem;
+      padding: 0.5rem 1rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .menu-item-box-container {
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      gap: 0.3rem;
+    }
+
+    .tab-container {
+      flex-direction: column;
+    }
+
+    .tab-button {
+      width: 100%;
+    }
+  }
+</style>
+
+<div class="themed-button-wrapper">
+  <div
+    class="themed-box"
+    id="menu-now-content"
+    role="region"
+    aria-live="polite"
+    aria-atomic="true"
+  >
+    <!-- Initial content handled by renderContent() -->
+  </div>
+</div>
+
+<script type="text/javascript">
+  (function () {
+    const viewApiUrl = "https://api.jsonbin.io/v3/b/686549ac8960c979a5b5e650";
+    const northsiderApiUrl = "https://api.jsonbin.io/v3/b/686fd78a53c4bd1d12bb5600";
+    const contentBox = document.getElementById("menu-now-content");
+    let currentActiveTab = 'The View';
+    let theViewMenuData = null;
+    let northsiderMenuData = null;
+
+    function renderContent() {
+      contentBox.innerHTML = '';
+
+      const menuData = currentActiveTab === 'The View' ? theViewMenuData : northsiderMenuData;
+      const mealTime = menuData?.table_title || 'Loading...';
+
+      const mainHeader = document.createElement('h3');
+      mainHeader.className = 'themed-box__title';
+      mainHeader.textContent = `Dining Menu Now: ${mealTime}`;
+      contentBox.appendChild(mainHeader);
+
+      const tabContainer = document.createElement('div');
+      tabContainer.className = 'tab-container';
+      tabContainer.setAttribute('role', 'tablist');
+      contentBox.appendChild(tabContainer);
+
+      const tabs = [
+        { name: 'The View', id: 'the-view-tab', ariaId: 'the-view-panel' },
+        { name: 'Northsider', id: 'northsider-tab', ariaId: 'northsider-panel' }
+      ];
+
+      tabs.forEach(({ name, id, ariaId }) => {
+        const button = document.createElement('button');
+        button.className = 'tab-button';
+        button.textContent = name;
+        button.setAttribute('role', 'tab');
+        button.setAttribute('id', id);
+        button.setAttribute('aria-controls', ariaId);
+        button.setAttribute('tabindex', currentActiveTab === name ? '0' : '-1');
+        button.setAttribute('aria-selected', currentActiveTab === name ? 'true' : 'false');
+        if (currentActiveTab === name) button.classList.add('active');
+        button.addEventListener('click', () => {
+          currentActiveTab = name;
+          renderContent();
+        });
+        tabContainer.appendChild(button);
+      });
+
+      const mainContentDisplayArea = document.createElement('div');
+      mainContentDisplayArea.className = 'main-content-display-area';
+      contentBox.appendChild(mainContentDisplayArea);
+
+      if (currentActiveTab === 'The View') {
+        mainContentDisplayArea.setAttribute('role', 'tabpanel');
+        mainContentDisplayArea.setAttribute('id', 'the-view-panel');
+        mainContentDisplayArea.setAttribute('aria-labelledby', 'the-view-tab');
+        mainContentDisplayArea.style.display = 'block';
+
+        if (theViewMenuData) {
+          displayMenu(theViewMenuData, mainContentDisplayArea);
+        } else {
+          mainContentDisplayArea.innerHTML = `<p class="themed-box__description">Loading The View menu...</p>`;
+          fetchMenu(viewApiUrl, 'The View');
+        }
+      } else if (currentActiveTab === 'Northsider') {
+        mainContentDisplayArea.setAttribute('role', 'tabpanel');
+        mainContentDisplayArea.setAttribute('id', 'northsider-panel');
+        mainContentDisplayArea.setAttribute('aria-labelledby', 'northsider-tab');
+        mainContentDisplayArea.style.display = 'block';
+
+        if (northsiderMenuData) {
+          displayMenu(northsiderMenuData, mainContentDisplayArea);
+        } else {
+          mainContentDisplayArea.innerHTML = `<p class="themed-box__description">Loading Northsider menu...</p>`;
+          fetchMenu(northsiderApiUrl, 'Northsider');
+        }
+      }
+    }
+
+    function displayMenu(mealData, targetElement) {
+      if (!mealData || !mealData.table_title || !mealData.menu) {
+        targetElement.innerHTML = `<p class="themed-box__description">No menu available or invalid data.</p>`;
+        return;
+      }
+
+      for (const [station, items] of Object.entries(mealData.menu)) {
+        if (items && Array.isArray(items) && items.length > 0) {
+          const heading = document.createElement('h4');
+          heading.className = 'station-heading';
+          heading.textContent = station;
+
+          const itemList = document.createElement('ul');
+          itemList.className = 'menu-item-box-container';
+          itemList.setAttribute('aria-label', `${station} items`);
+
+          items.forEach(item => {
+            const itemBox = document.createElement('li');
+            itemBox.className = 'menu-item-box';
+            itemBox.setAttribute('role', 'listitem');
+            itemBox.textContent = item;
+            itemList.appendChild(itemBox);
+          });
+
+          targetElement.appendChild(heading);
+          targetElement.appendChild(itemList);
+        }
+      }
+    }
+
+    function fetchMenu(url, location) {
+      fetch(url)
+        .then((res) => {
+          if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+          return res.json();
+        })
+        .then((data) => {
+          const record = data.record || data;
+          if (location === 'The View') {
+            theViewMenuData = record;
+          } else if (location === 'Northsider') {
+            northsiderMenuData = record;
+          }
+          renderContent();
+        })
+        .catch((error) => {
+          console.error(`Error fetching ${location} menu:`, error);
+          contentBox.innerHTML = `<p class="themed-box__description" role="alert">Cannot load ${location} menu. Please try again later.</p>`;
+        });
+    }
+
+    renderContent();
+  })();
+</script>

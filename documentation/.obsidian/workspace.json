@@ -182,7 +182,7 @@
             }
           },
           {
-            "id": "41becb9db9268dfb",
+            "id": "de0503f8e0d53fa5",
             "type": "leaf",
             "state": {
               "type": "smtcmp-chat-view",
@@ -210,7 +210,7 @@
       "terminal:Open terminal": false
     }
   },
-  "active": "5ad6657b97ea5d9c",
+  "active": "de0503f8e0d53fa5",
   "lastOpenFiles": [
     "01 - Building an API for the dining menu.md",
     "00 - Introduction to Dining Menu Widget.md",

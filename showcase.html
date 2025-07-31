@@ -11,6 +11,7 @@
   .themed-button-wrapper {
     width: 100%;
     display: flex;
+    flex-direction: column;
     justify-content: flex-start;
     align-items: flex-start;
     padding: 0;
@@ -33,14 +34,29 @@
     gap: 0.75rem;
     overflow-x: hidden;
   }
+  
+  .widgets.stories-rollup {
+    margin-bottom: 0.75rem;
+    width: 100%;
+    padding: 0 0.25rem;
+  }
 
-  .themed-box__title {
+  .widgets__title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .widgets__title h3.title {
+    font-family: 'Inter', sans-serif;
     font-size: 1.6rem;
     font-weight: 700;
-    color: var(--udl-brand-primary);
-    margin-bottom: 0.75rem;
-    text-align: center;
-    line-height: 1.2;
+    color: #333;
+    margin: 0;
+  }
+  
+  .widgets__icon .icomoon-fork-knife {
+    font-size: 1.5rem; 
   }
 
   .station-heading {
@@ -63,21 +79,21 @@
     overflow-x: hidden;
   }
 
-  .menu-item-box {
+ .menu-item-box {
   background-color: var(--udl-brand-primary-variant);
   color: var(--udl-brand-primary-contrast);
   padding: 0.4rem 0.75rem;
   border-radius: 0.5rem;
   font-size: 1rem;
   font-weight: 600;
-  display: inline-flex; /* use inline-flex to allow wrapping within flex grid */
+  display: inline-flex;
   align-items: center;
-  white-space: normal; /* allow wrapping */
-  word-break: break-word; /* optional: handles edge cases */
+  white-space: normal;
+  word-break: break-word;
   flex-shrink: 0;
   border: 1px solid var(--udl-brand-primary);
   transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-  max-width: 100%; /* prevent breaking layout */
+  max-width: 100%;
 }
 
   .menu-item-box:hover {
@@ -168,6 +184,14 @@
 </style>
 
 <div class="themed-button-wrapper">
+  <div id="widget-main-title" class="widgets stories-rollup">
+    <div class="widgets__title">
+      <span class="widgets__icon">
+        <span class="icomoon-fork-knife"></span>
+      </span>
+      <h3 id="widget-title-text" class="title">Dining Menu Now: Loading...</h3>
+    </div>
+  </div>
   <div
     class="themed-box"
     id="menu-now-content"
@@ -175,83 +199,53 @@
     aria-live="polite"
     aria-atomic="true"
   >
-    <!-- Initial content handled by renderContent() -->
-  </div>
+    </div>
 </div>
-
 <script type="text/javascript">
   (function () {
-    const viewApiUrl = "https://api.jsonbin.io/v3/b/686549ac8960c979a5b5e650";
-    const northsiderApiUrl = "https://api.jsonbin.io/v3/b/686fd78a53c4bd1d12bb5600";
+    const viewApiUrl = "https://r8j4yvkowi.execute-api.us-east-1.amazonaws.com/menu-api-beta/api/view-menu-now/";
+    const northsiderApiUrl = "https://r8j4yvkowi.execute-api.us-east-1.amazonaws.com/menu-api-beta/api/northsider-menu-now/";
     const contentBox = document.getElementById("menu-now-content");
     let currentActiveTab = 'The View';
     let theViewMenuData = null;
     let northsiderMenuData = null;
+    const tabs = [
+      { name: 'The View', id: 'the-view-tab', ariaId: 'the-view-panel', menuLink: "https://www.stthomas.edu/dining/locations-menus-hours/the-view/menu/index.html" },
+      { name: 'Northsider', id: 'northsider-tab', ariaId: 'northsider-panel', menuLink: "https://www.stthomas.edu/dining/locations-menus-hours/northsider/menu/index.html" }
+    ];
+    let tabContainer, mainContentDisplayArea;
+
+    // --- START: NEW FUNCTION ---
+    // This dedicated function updates only the title's text content.
+    function updateTitleText(mealTime) {
+      const titleElement = document.getElementById('widget-title-text');
+      if (titleElement) {
+        titleElement.textContent = `Dining Menu Now: ${mealTime}`;
+      }
+    }
+    // --- END: NEW FUNCTION ---
 
     function renderContent() {
-      contentBox.innerHTML = '';
-
-      const menuData = currentActiveTab === 'The View' ? theViewMenuData : northsiderMenuData;
-      const mealTime = menuData?.table_title || 'Loading...';
-
-      const mainHeader = document.createElement('h3');
-      mainHeader.className = 'themed-box__title';
-      mainHeader.textContent = `Dining Menu Now: ${mealTime}`;
-      contentBox.appendChild(mainHeader);
-
-      const tabContainer = document.createElement('div');
-      tabContainer.className = 'tab-container';
-      tabContainer.setAttribute('role', 'tablist');
-      contentBox.appendChild(tabContainer);
-
-      const tabs = [
-        { name: 'The View', id: 'the-view-tab', ariaId: 'the-view-panel' },
-        { name: 'Northsider', id: 'northsider-tab', ariaId: 'northsider-panel' }
-      ];
-
-      tabs.forEach(({ name, id, ariaId }) => {
-        const button = document.createElement('button');
-        button.className = 'tab-button';
-        button.textContent = name;
-        button.setAttribute('role', 'tab');
-        button.setAttribute('id', id);
-        button.setAttribute('aria-controls', ariaId);
+      // Only update tab button states and menu content, not the structure
+      tabs.forEach(({ name, id, ariaId }, idx) => {
+        const button = tabContainer.children[idx];
+        button.classList.toggle('active', currentActiveTab === name);
         button.setAttribute('tabindex', currentActiveTab === name ? '0' : '-1');
         button.setAttribute('aria-selected', currentActiveTab === name ? 'true' : 'false');
-        if (currentActiveTab === name) button.classList.add('active');
-        button.addEventListener('click', () => {
-          currentActiveTab = name;
-          renderContent();
-        });
-        tabContainer.appendChild(button);
       });
 
-      const mainContentDisplayArea = document.createElement('div');
-      mainContentDisplayArea.className = 'main-content-display-area';
-      contentBox.appendChild(mainContentDisplayArea);
-
-      if (currentActiveTab === 'The View') {
-        mainContentDisplayArea.setAttribute('role', 'tabpanel');
-        mainContentDisplayArea.setAttribute('id', 'the-view-panel');
-        mainContentDisplayArea.setAttribute('aria-labelledby', 'the-view-tab');
-        mainContentDisplayArea.style.display = 'block';
-
-        if (theViewMenuData) {
-          displayMenu(theViewMenuData, mainContentDisplayArea);
-        } else {
-          mainContentDisplayArea.innerHTML = `<p class="themed-box__description">Loading The View menu...</p>`;
+      // Update menu content area
+      const menuData = currentActiveTab === 'The View' ? theViewMenuData : northsiderMenuData;
+      if (menuData) {
+        updateTitleText(menuData.table_title);
+        mainContentDisplayArea.innerHTML = '';
+        displayMenu(menuData, mainContentDisplayArea);
+      } else {
+        updateTitleText('Loading...');
+        mainContentDisplayArea.innerHTML = `<p class="themed-box__description">Loading ${currentActiveTab} menu...</p>`;
+        if (currentActiveTab === 'The View') {
           fetchMenu(viewApiUrl, 'The View');
-        }
-      } else if (currentActiveTab === 'Northsider') {
-        mainContentDisplayArea.setAttribute('role', 'tabpanel');
-        mainContentDisplayArea.setAttribute('id', 'northsider-panel');
-        mainContentDisplayArea.setAttribute('aria-labelledby', 'northsider-tab');
-        mainContentDisplayArea.style.display = 'block';
-
-        if (northsiderMenuData) {
-          displayMenu(northsiderMenuData, mainContentDisplayArea);
         } else {
-          mainContentDisplayArea.innerHTML = `<p class="themed-box__description">Loading Northsider menu...</p>`;
           fetchMenu(northsiderApiUrl, 'Northsider');
         }
       }
@@ -259,7 +253,12 @@
 
     function displayMenu(mealData, targetElement) {
       if (!mealData || !mealData.table_title || !mealData.menu) {
-        targetElement.innerHTML = `<p class="themed-box__description">No menu available or invalid data.</p>`;
+        // TODO: WHEN NORTHSIDER MENU IS AVIALABLE IN FALL, REMOVE THIS IF ELSE, AND ONLY KEEP THE CODE IN THE ELSE BLOCK
+        if (currentActiveTab == "Northsider") {
+          targetElement.innerHTML = `<p class="themed-box__description">Menu for ${currentActiveTab} coming this fall! Stay tuned!</p>`;
+        } else {
+          targetElement.innerHTML = `<p class="themed-box__description">Oh? It looks like the menu for ${currentActiveTab} has not updated their menu for this week.</p>`;
+        }
         return;
       }
 
@@ -293,8 +292,8 @@
           if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
           return res.json();
         })
-        .then((data) => {
-          const record = data.record || data;
+        .then((receivedData) => {
+          const record = receivedData.data || receivedData;
           if (location === 'The View') {
             theViewMenuData = record;
           } else if (location === 'Northsider') {
@@ -304,10 +303,45 @@
         })
         .catch((error) => {
           console.error(`Error fetching ${location} menu:`, error);
-          contentBox.innerHTML = `<p class="themed-box__description" role="alert">Cannot load ${location} menu. Please try again later.</p>`;
+          const tab = tabs.find(t => t.name === location);
+          const menuLink = tab ? tab.menuLink : '#';
+          mainContentDisplayArea.innerHTML = `<p class="themed-box__description" role="alert">Cannot load menu. Please visit <a href="${menuLink}" target="_blank" rel="noopener noreferrer">${location}'s menu</a>.</p>`;
+          updateTitleText('Error');
         });
     }
 
+    // Initial render call
+    // Initial structure render
+    // Create tab container and tab buttons
+    tabContainer = document.createElement('div');
+    tabContainer.className = 'tab-container';
+    tabContainer.setAttribute('role', 'tablist');
+    tabs.forEach(({ name, id, ariaId }, idx) => {
+      const button = document.createElement('button');
+      button.className = 'tab-button';
+      button.textContent = name;
+      button.setAttribute('role', 'tab');
+      button.setAttribute('id', id);
+      button.setAttribute('aria-controls', ariaId);
+      button.setAttribute('tabindex', currentActiveTab === name ? '0' : '-1');
+      button.setAttribute('aria-selected', currentActiveTab === name ? 'true' : 'false');
+      if (currentActiveTab === name) button.classList.add('active');
+      button.addEventListener('click', () => {
+        if (currentActiveTab !== name) {
+          currentActiveTab = name;
+          renderContent();
+        }
+      });
+      tabContainer.appendChild(button);
+    });
+    contentBox.appendChild(tabContainer);
+
+    // Create main content display area
+    mainContentDisplayArea = document.createElement('div');
+    mainContentDisplayArea.className = 'main-content-display-area';
+    contentBox.appendChild(mainContentDisplayArea);
+
+    // Initial content render
     renderContent();
   })();
 </script>

@@ -69,6 +69,15 @@
     border-bottom: 1px solid var(--udl-brand-secondary-variant);
   }
 
+  .meal-heading {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--udl-brand-secondary);
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.15rem;
+  }
+
   .menu-item-box-container {
     display: flex;
     flex-wrap: wrap;
@@ -155,6 +164,10 @@
       font-size: 1.05rem;
     }
 
+    .meal-heading {
+      font-size: 1.2rem;
+    }
+
     .menu-item-box-container {
       gap: 0.3rem;
     }
@@ -203,12 +216,33 @@
 </div>
 <script type="text/javascript">
   (function () {
-    const viewApiUrl = "https://r8j4yvkowi.execute-api.us-east-1.amazonaws.com/menu-api-beta/api/view-menu-now/";
-    const northsiderApiUrl = "https://r8j4yvkowi.execute-api.us-east-1.amazonaws.com/menu-api-beta/api/northsider-menu-now/";
+    const viewTodayApiUrl = "https://r8j4yvkowi.execute-api.us-east-1.amazonaws.com/menu-api-beta/api/view-menu-today/";
+    const northsiderTodayApiUrl = "https://r8j4yvkowi.execute-api.us-east-1.amazonaws.com/menu-api-beta/api/northsider-menu-today/";
+    
+
+    const diningMenuTimings = [
+      { location: 'The View',  mealTimes: {
+        breakfastStart: '7:00',
+        breakfastEnd: '9:00',
+        lunchStart: '11:00',
+        lunchEnd: '14:00',
+        dinnerStart: '16:00',
+        dinnerEnd: '19:00',
+      }},
+      { location: 'Northsider', mealTimes: {
+        breakfastStart: '7:00',
+        breakfastEnd: '10:00',
+        lunchStart: '11:00',
+        lunchEnd: '14:00',
+        dinnerStart: '17:00',
+        dinnerEnd: '20:00',
+      }}
+    ]
+
     const contentBox = document.getElementById("menu-now-content");
     let currentActiveTab = 'The View';
-    let theViewMenuData = null;
-    let northsiderMenuData = null;
+    let theViewTodayMenuData = null;
+    let northsiderTodayMenuData = null;
     const tabs = [
       { name: 'The View', id: 'the-view-tab', ariaId: 'the-view-panel', menuLink: "https://www.stthomas.edu/dining/locations-menus-hours/the-view/menu/index.html" },
       { name: 'Northsider', id: 'northsider-tab', ariaId: 'northsider-panel', menuLink: "https://www.stthomas.edu/dining/locations-menus-hours/northsider/menu/index.html" }
@@ -216,11 +250,141 @@
     let tabContainer, mainContentDisplayArea;
 
     // --- START: NEW FUNCTION ---
+    // Dynamically determine and update the meal name based on timings and current time
+    function getCurrentMealName(location) {
+      const timingsObj = diningMenuTimings.find(l => l.location === location);
+      if (!timingsObj) return 'Closed';
+      const mealTimes = timingsObj.mealTimes;
+      const now = new Date();    
+      // Get current time in HH:mm (24hr)
+      const pad = n => n.toString().padStart(2, '0');
+      const currentTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+      // Build an array of meal periods: {name, start, end}
+      const periods = Object.entries(mealTimes).map(([key, value]) => {
+        // key: breakfastStart, lunchEnd, etc.
+        const match = key.match(/(\w+)(Start|End)/);
+        if (!match) return null;
+        return { meal: match[1], type: match[2], time: value };
+      }).filter(Boolean);
+
+      // Group by meal name
+      const mealGroups = {};
+      periods.forEach(({ meal, type, time }) => {
+        if (!mealGroups[meal]) mealGroups[meal] = {};
+        mealGroups[meal][type.toLowerCase()] = time;
+      });
+
+      // Sort meals by start time
+      const sortedMeals = Object.entries(mealGroups)
+        .map(([meal, obj]) => ({ name: meal, start: obj.start, end: obj.end }))
+        .filter(m => m.start && m.end)
+        .sort((a, b) => a.start.localeCompare(b.start));
+
+      // Find which meal period current time is in
+      for (const { name, start, end } of sortedMeals) {
+        if (start <= currentTime && currentTime < end) {
+          // Capitalize meal name for display
+          return name.charAt(0).toUpperCase() + name.slice(1);
+        }
+      }
+      // If not in any meal period, show 'Closed'
+      return 'Closed';
+    }
+
+    // Get next meal information for closed periods
+    function getNextMealInfo(location) {
+      const timingsObj = diningMenuTimings.find(l => l.location === location);
+      if (!timingsObj) return null;
+      const mealTimes = timingsObj.mealTimes;
+      const now = new Date();    
+      const pad = n => n.toString().padStart(2, '0');
+      const currentTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+      // Build meal periods
+      const periods = Object.entries(mealTimes).map(([key, value]) => {
+        const match = key.match(/(\w+)(Start|End)/);
+        if (!match) return null;
+        return { meal: match[1], type: match[2], time: value };
+      }).filter(Boolean);
+
+      const mealGroups = {};
+      periods.forEach(({ meal, type, time }) => {
+        if (!mealGroups[meal]) mealGroups[meal] = {};
+        mealGroups[meal][type.toLowerCase()] = time;
+      });
+
+      const sortedMeals = Object.entries(mealGroups)
+        .map(([meal, obj]) => ({ name: meal, start: obj.start, end: obj.end }))
+        .filter(m => m.start && m.end)
+        .sort((a, b) => a.start.localeCompare(b.start));
+
+      // Find next meal
+      for (const meal of sortedMeals) {
+        if (meal.start > currentTime) {
+          return {
+            mealName: meal.name.charAt(0).toUpperCase() + meal.name.slice(1),
+            startTime: meal.start
+          };
+        }
+      }
+
+      // If no meal found today, return tomorrow's first meal
+      if (sortedMeals.length > 0) {
+        return {
+          mealName: sortedMeals[0].name.charAt(0).toUpperCase() + sortedMeals[0].name.slice(1),
+          startTime: sortedMeals[0].start,
+          isTomorrow: true
+        };
+      }
+
+      return null;
+    }
+
+    // Get the appropriate meal data to display when closed
+    function getNextMealData(location) {
+      const nextMeal = getNextMealInfo(location);
+      if (!nextMeal || nextMeal.isTomorrow) return null;
+
+      const todayData = location === 'The View' ? theViewTodayMenuData : northsiderTodayMenuData;
+      if (!todayData || !todayData.data) return null;
+
+      // Find the meal in today's data
+      return todayData.data.find(meal => 
+        meal.table_title && meal.table_title.toLowerCase() === nextMeal.mealName.toLowerCase()
+      );
+    }
+
+    // Get current meal data from today's menu based on current time
+    function getCurrentMealData(location) {
+      const currentMeal = getCurrentMealName(location);
+      if (currentMeal === 'Closed') return null;
+
+      const todayData = location === 'The View' ? theViewTodayMenuData : northsiderTodayMenuData;
+      if (!todayData || !todayData.data) return null;
+
+      // Find the current meal in today's data
+      return todayData.data.find(meal => 
+        meal.table_title && meal.table_title.toLowerCase() === currentMeal.toLowerCase()
+      );
+    }
+
     // This dedicated function updates only the title's text content.
-    function updateTitleText(mealTime) {
+    function updateTitleText() {
       const titleElement = document.getElementById('widget-title-text');
       if (titleElement) {
-        titleElement.textContent = `Dining Menu Now: ${mealTime}`;
+        const mealName = getCurrentMealName(currentActiveTab);
+        if (mealName === 'Closed') {
+          const nextMeal = getNextMealInfo(currentActiveTab);
+          if (nextMeal) {
+            const timeDisplay = nextMeal.isTomorrow ? `tomorrow at ${nextMeal.startTime}` : nextMeal.startTime;
+            titleElement.innerHTML = `Dining Menu Now: Closed<br><small style="font-size: 0.8em; font-weight: 400;">Opens at ${timeDisplay} for ${nextMeal.mealName}</small>`;
+          } else {
+            titleElement.textContent = `Dining Menu Now: Closed`;
+          }
+        } else {
+          titleElement.textContent = `Dining Menu Now: ${mealName}`;
+        }
       }
     }
     // --- END: NEW FUNCTION ---
@@ -235,18 +399,27 @@
       });
 
       // Update menu content area
-      const menuData = currentActiveTab === 'The View' ? theViewMenuData : northsiderMenuData;
+      const currentMeal = getCurrentMealName(currentActiveTab);
+      let menuData = null;
+      
+      if (currentMeal === 'Closed') {
+        // If closed, try to get next meal data
+        menuData = getNextMealData(currentActiveTab);
+      } else {
+        // If open, get current meal data
+        menuData = getCurrentMealData(currentActiveTab);
+      }
+
+      updateTitleText();
       if (menuData) {
-        updateTitleText(menuData.table_title);
         mainContentDisplayArea.innerHTML = '';
         displayMenu(menuData, mainContentDisplayArea);
       } else {
-        updateTitleText('Loading...');
         mainContentDisplayArea.innerHTML = `<p class="themed-box__description">Loading ${currentActiveTab} menu...</p>`;
         if (currentActiveTab === 'The View') {
-          fetchMenu(viewApiUrl, 'The View');
+          fetchTodayMenu(viewTodayApiUrl, 'The View');
         } else {
-          fetchMenu(northsiderApiUrl, 'Northsider');
+          fetchTodayMenu(northsiderTodayApiUrl, 'Northsider');
         }
       }
     }
@@ -257,10 +430,30 @@
         if (currentActiveTab == "Northsider") {
           targetElement.innerHTML = `<p class="themed-box__description">Menu for ${currentActiveTab} coming this fall! Stay tuned!</p>`;
         } else {
-          targetElement.innerHTML = `<p class="themed-box__description">Oh? It looks like the menu for ${currentActiveTab} has not updated their menu for this week.</p>`;
+          const tab = tabs.find(t => t.name === currentActiveTab);
+          const menuLink = tab ? tab.menuLink : 'https://www.stthomas.edu/dining/';
+          targetElement.innerHTML = `<p class="themed-box__description" role="alert">Something went wrong. Please check back shortly or visit the Dining website for more information: <a href="${menuLink}" target="_blank" rel="noopener noreferrer">${currentActiveTab}'s Menu</a></p>`;
         }
         return;
       }
+
+      // Add meal info as a station-style heading
+      const currentMeal = getCurrentMealName(currentActiveTab);
+      const mealHeading = document.createElement('h4');
+      mealHeading.className = 'meal-heading';
+      
+      if (currentMeal === 'Closed') {
+        const nextMeal = getNextMealInfo(currentActiveTab);
+        if (nextMeal && !nextMeal.isTomorrow) {
+          mealHeading.textContent = `${mealData.table_title} (Next Meal)`;
+        } else {
+          mealHeading.textContent = mealData.table_title;
+        }
+      } else {
+        mealHeading.textContent = `${mealData.table_title} (Now Serving)`;
+      }
+      
+      targetElement.appendChild(mealHeading);
 
       for (const [station, items] of Object.entries(mealData.menu)) {
         if (items && Array.isArray(items) && items.length > 0) {
@@ -286,27 +479,29 @@
       }
     }
 
-    function fetchMenu(url, location) {
+    function fetchTodayMenu(url, location) {
       fetch(url)
         .then((res) => {
           if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
           return res.json();
         })
         .then((receivedData) => {
-          const record = receivedData.data || receivedData;
           if (location === 'The View') {
-            theViewMenuData = record;
+            theViewTodayMenuData = receivedData;
           } else if (location === 'Northsider') {
-            northsiderMenuData = record;
+            northsiderTodayMenuData = receivedData;
           }
+          // Re-render with the new data
           renderContent();
         })
         .catch((error) => {
-          console.error(`Error fetching ${location} menu:`, error);
+          console.error(`Error fetching ${location} today menu:`, error);
           const tab = tabs.find(t => t.name === location);
           const menuLink = tab ? tab.menuLink : '#';
           mainContentDisplayArea.innerHTML = `<p class="themed-box__description" role="alert">Cannot load menu. Please visit <a href="${menuLink}" target="_blank" rel="noopener noreferrer">${location}'s menu</a>.</p>`;
-          updateTitleText('Error');
+          // Show error in title
+          const titleElement = document.getElementById('widget-title-text');
+          if (titleElement) titleElement.textContent = `Dining Menu Now: Error`;
         });
     }
 

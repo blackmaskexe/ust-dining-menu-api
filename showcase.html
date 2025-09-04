@@ -221,21 +221,53 @@
     
 
     const diningMenuTimings = [
-      { location: 'The View',  mealTimes: {
-        breakfastStart: '7:00',
-        breakfastEnd: '9:00',
-        lunchStart: '11:00',
-        lunchEnd: '14:00',
-        dinnerStart: '16:00',
-        dinnerEnd: '19:00',
+      { location: 'The View', mealTimes: {
+        // Default weekday schedule
+        default: {
+          breakfastStart: '7:00',
+          breakfastEnd: '9:00',
+          lunchStart: '11:00',
+          lunchEnd: '14:00',
+          dinnerStart: '16:00',
+          dinnerEnd: '19:00',
+        },
+        // Weekend schedule with brunch
+        saturday: {
+          brunchStart: '9:00',
+          brunchEnd: '14:00',
+          dinnerStart: '16:00',
+          dinnerEnd: '19:00',
+        },
+        sunday: {
+          brunchStart: '9:00',
+          brunchEnd: '14:00',
+          dinnerStart: '16:00',
+          dinnerEnd: '19:00',
+        }
       }},
       { location: 'Northsider', mealTimes: {
-        breakfastStart: '7:00',
-        breakfastEnd: '10:00',
-        lunchStart: '11:00',
-        lunchEnd: '14:00',
-        dinnerStart: '17:00',
-        dinnerEnd: '20:00',
+        // Default weekday schedule
+        default: {
+          breakfastStart: '7:00',
+          breakfastEnd: '10:00',
+          lunchStart: '11:00',
+          lunchEnd: '14:00',
+          dinnerStart: '17:00',
+          dinnerEnd: '20:00',
+        },
+        // Weekend schedule with brunch
+        saturday: {
+          brunchStart: '9:00',
+          brunchEnd: '14:00',
+          dinnerStart: '17:00',
+          dinnerEnd: '20:00',
+        },
+        sunday: {
+          brunchStart: '9:00',
+          brunchEnd: '14:00',
+          dinnerStart: '17:00',
+          dinnerEnd: '20:00',
+        }
       }}
     ]
 
@@ -249,12 +281,51 @@
     ];
     let tabContainer, mainContentDisplayArea;
 
+    // Helper function to get day-specific meal times
+    function getDayMealTimes(location) {
+      const timingsObj = diningMenuTimings.find(l => l.location === location);
+      if (!timingsObj) return null;
+      
+      const now = new Date();
+      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const currentDay = dayNames[now.getDay()];
+      
+      // Return day-specific times if available, otherwise use default
+      return timingsObj.mealTimes[currentDay] || timingsObj.mealTimes.default;
+    }
+
+    // Helper function to normalize meal names for flexible matching
+    function normalizeMealName(mealName) {
+      if (!mealName) return '';
+      const normalized = mealName.toLowerCase().trim();
+      
+      // Check for known meal types in the name
+      if (normalized.includes('brunch')) return 'brunch';
+      if (normalized.includes('breakfast')) return 'breakfast';
+      if (normalized.includes('lunch')) return 'lunch';
+      if (normalized.includes('dinner')) return 'dinner';
+      
+      return normalized;
+    }
+
+    // Helper function to convert 24-hour time to 12-hour format with AM/PM
+    function convertTo12Hour(time24) {
+      if (!time24) return time24;
+      
+      const [hours, minutes] = time24.split(':');
+      const hour24 = parseInt(hours, 10);
+      const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+      const period = hour24 < 12 ? 'AM' : 'PM';
+      
+      return `${hour12}:${minutes} ${period}`;
+    }
+
     // --- START: NEW FUNCTION ---
     // Dynamically determine and update the meal name based on timings and current time
     function getCurrentMealName(location) {
-      const timingsObj = diningMenuTimings.find(l => l.location === location);
-      if (!timingsObj) return 'Closed';
-      const mealTimes = timingsObj.mealTimes;
+      const mealTimes = getDayMealTimes(location);
+      if (!mealTimes) return 'Closed';
+      
       const now = new Date();    
       // Get current time in HH:mm (24hr)
       const pad = n => n.toString().padStart(2, '0');
@@ -294,9 +365,9 @@
 
     // Get next meal information for closed periods
     function getNextMealInfo(location) {
-      const timingsObj = diningMenuTimings.find(l => l.location === location);
-      if (!timingsObj) return null;
-      const mealTimes = timingsObj.mealTimes;
+      const mealTimes = getDayMealTimes(location);
+      if (!mealTimes) return null;
+      
       const now = new Date();    
       const pad = n => n.toString().padStart(2, '0');
       const currentTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
@@ -349,10 +420,13 @@
       const todayData = location === 'The View' ? theViewTodayMenuData : northsiderTodayMenuData;
       if (!todayData || !todayData.data) return null;
 
-      // Find the meal in today's data
-      return todayData.data.find(meal => 
-        meal.table_title && meal.table_title.toLowerCase() === nextMeal.mealName.toLowerCase()
-      );
+      // Find the meal in today's data using flexible matching
+      return todayData.data.find(meal => {
+        if (!meal.table_title) return false;
+        const normalizedApiMeal = normalizeMealName(meal.table_title);
+        const normalizedNextMeal = nextMeal.mealName.toLowerCase();
+        return normalizedApiMeal === normalizedNextMeal;
+      });
     }
 
     // Get current meal data from today's menu based on current time
@@ -363,10 +437,92 @@
       const todayData = location === 'The View' ? theViewTodayMenuData : northsiderTodayMenuData;
       if (!todayData || !todayData.data) return null;
 
-      // Find the current meal in today's data
-      return todayData.data.find(meal => 
-        meal.table_title && meal.table_title.toLowerCase() === currentMeal.toLowerCase()
-      );
+      // Find the current meal in today's data using flexible matching
+      return todayData.data.find(meal => {
+        if (!meal.table_title) return false;
+        const normalizedApiMeal = normalizeMealName(meal.table_title);
+        const normalizedCurrentMeal = currentMeal.toLowerCase();
+        return normalizedApiMeal === normalizedCurrentMeal;
+      });
+    }
+
+    // Get the last meal that was served before current time
+    function getLastMealBeforeClosing(location) {
+      const mealTimes = getDayMealTimes(location);
+      if (!mealTimes) return null;
+      
+      const now = new Date();
+      const pad = n => n.toString().padStart(2, '0');
+      const currentTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+      // Build meal periods
+      const periods = Object.entries(mealTimes).map(([key, value]) => {
+        const match = key.match(/(\w+)(Start|End)/);
+        if (!match) return null;
+        return { meal: match[1], type: match[2], time: value };
+      }).filter(Boolean);
+
+      const mealGroups = {};
+      periods.forEach(({ meal, type, time }) => {
+        if (!mealGroups[meal]) mealGroups[meal] = {};
+        mealGroups[meal][type.toLowerCase()] = time;
+      });
+
+      const sortedMeals = Object.entries(mealGroups)
+        .map(([meal, obj]) => ({ name: meal, start: obj.start, end: obj.end }))
+        .filter(m => m.start && m.end)
+        .sort((a, b) => a.start.localeCompare(b.start));
+
+      // Find the last meal that has ended before current time
+      let lastMeal = null;
+      for (const meal of sortedMeals) {
+        if (meal.end <= currentTime) {
+          lastMeal = meal;
+        }
+      }
+
+      return lastMeal ? lastMeal.name.charAt(0).toUpperCase() + lastMeal.name.slice(1) : null;
+    }
+
+    // Check if limited stations are available (between meals, not after dinner)
+    function hasLimitedStationsAvailable(location) {
+      const mealTimes = getDayMealTimes(location);
+      if (!mealTimes) return false;
+      
+      const now = new Date();
+      const pad = n => n.toString().padStart(2, '0');
+      const currentTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+      
+      // Find the last meal end time (assuming dinner is last, but dynamically find it)
+      const periods = Object.entries(mealTimes).map(([key, value]) => {
+        const match = key.match(/(\w+)End/);
+        if (!match) return null;
+        return { meal: match[1], time: value };
+      }).filter(Boolean);
+      
+      const lastMealEnd = periods.reduce((latest, meal) => {
+        return !latest || meal.time > latest.time ? meal : latest;
+      }, null);
+      
+      if (!lastMealEnd) return false;
+      
+      // If current time is after last meal end, no limited stations
+      if (currentTime >= lastMealEnd.time) return false;
+      
+      // If we're closed but not after last meal, limited stations are available
+      return getCurrentMealName(location) === 'Closed';
+    }
+
+    // Get current meal end time
+    function getCurrentMealEndTime(location) {
+      const currentMeal = getCurrentMealName(location);
+      if (currentMeal === 'Closed') return null;
+      
+      const mealTimes = getDayMealTimes(location);
+      if (!mealTimes) return null;
+      
+      const mealEndKey = currentMeal.toLowerCase() + 'End';
+      return mealTimes[mealEndKey] || null;
     }
 
     // This dedicated function updates only the title's text content.
@@ -376,14 +532,20 @@
         const mealName = getCurrentMealName(currentActiveTab);
         if (mealName === 'Closed') {
           const nextMeal = getNextMealInfo(currentActiveTab);
+          
           if (nextMeal) {
-            const timeDisplay = nextMeal.isTomorrow ? `tomorrow at ${nextMeal.startTime}` : nextMeal.startTime;
+            const timeDisplay = nextMeal.isTomorrow ? `tomorrow at ${convertTo12Hour(nextMeal.startTime)}` : convertTo12Hour(nextMeal.startTime);
             titleElement.innerHTML = `Dining Menu Now: Closed<br><small style="font-size: 0.8em; font-weight: 400;">Opens at ${timeDisplay} for ${nextMeal.mealName}</small>`;
           } else {
             titleElement.textContent = `Dining Menu Now: Closed`;
           }
         } else {
-          titleElement.textContent = `Dining Menu Now: ${mealName}`;
+          const endTime = getCurrentMealEndTime(currentActiveTab);
+          if (endTime) {
+            titleElement.innerHTML = `Dining Menu Now: ${mealName}<br><small style="font-size: 0.8em; font-weight: 400;">Until ${convertTo12Hour(endTime)}</small>`;
+          } else {
+            titleElement.textContent = `Dining Menu Now: ${mealName}`;
+          }
         }
       }
     }
@@ -443,14 +605,25 @@
       mealHeading.className = 'meal-heading';
       
       if (currentMeal === 'Closed') {
+        const hasLimitedStations = hasLimitedStationsAvailable(currentActiveTab);
+        const lastMeal = getLastMealBeforeClosing(currentActiveTab);
+        
+        // Add limited stations info if available
+        if (hasLimitedStations && lastMeal) {
+          const limitedStationsHeading = document.createElement('h4');
+          limitedStationsHeading.className = 'meal-heading';
+          limitedStationsHeading.textContent = `Limited Stations for ${lastMeal} available`;
+          targetElement.appendChild(limitedStationsHeading);
+        }
+        
         const nextMeal = getNextMealInfo(currentActiveTab);
         if (nextMeal && !nextMeal.isTomorrow) {
-          mealHeading.textContent = `${mealData.table_title} (Next Meal)`;
+          mealHeading.textContent = `Showing Menu for ${mealData.table_title} (Next Meal)`;
         } else {
-          mealHeading.textContent = mealData.table_title;
+          mealHeading.textContent = `Showing Menu for ${mealData.table_title}`;
         }
       } else {
-        mealHeading.textContent = `${mealData.table_title} (Now Serving)`;
+        mealHeading.textContent = `Showing Menu for ${mealData.table_title} (Now Serving)`;
       }
       
       targetElement.appendChild(mealHeading);
